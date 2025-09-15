@@ -292,8 +292,7 @@ void ATrafficLightManager::GenerateSignalsAndTrafficLights()
     TrafficLightsGenerated = true;
 
     // Get current map name
-    FString CurrentMapName = GetWorld()->GetMapName();
-    if (CurrentMapName.Equals(TEXT("Town15"), ESearchCase::IgnoreCase))
+    if (CurrentMapName.Contains(TEXT("Town15"), ESearchCase::IgnoreCase))
     {
       AdjustAllSignsToHeightGround();
     }
