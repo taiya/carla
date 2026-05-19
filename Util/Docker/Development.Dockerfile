@@ -92,8 +92,9 @@ RUN --mount=type=secret,id=epic_user,uid=${UID} \
 
 # Built carla
 ENV CARLA_UE4_ROOT="/workspaces/carla"
-ARG BRANCH=ue4-dev
-RUN git clone --depth 1 --branch ${BRANCH} https://github.com/carla-simulator/carla.git ${CARLA_UE4_ROOT}
+ARG BRANCH=main
+ARG REPO=https://github.com/taiya/carla.git
+RUN git clone --depth 1 --branch ${BRANCH} ${REPO} ${CARLA_UE4_ROOT}
 
 WORKDIR ${CARLA_UE4_ROOT}
 

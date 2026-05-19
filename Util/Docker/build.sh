@@ -28,7 +28,8 @@ Ubuntu distribution:
 Build options:
 
     --force-rebuild      Force rebuild images with no cache
-    --branch             CARLA branch (only for monolith configuration)
+    --branch             CARLA branch or tag (only for monolith configuration)
+    --repo               CARLA git repository URL (only for monolith configuration)
 
 Epic credentials (only needed for monolith configuration)
     --epic-user          Github user name
@@ -47,8 +48,9 @@ BUILD_DEV=false
 BUILD_MONOLITH=false
 BUILD_CI=false
 
-# CARLA target branch for monolith build
-BRANCH="ue4-dev"
+# CARLA target branch and repo for monolith build
+BRANCH="main"
+REPO="https://github.com/taiya/carla.git"
 EPIC_USER=
 EPIC_TOKEN=
 
@@ -58,7 +60,7 @@ DOCKER_GID=$(getent group docker | cut -d: -f3)
 
 FORCE_REBUILD=
 
-OPTS=`getopt -o h --long help,ubuntu-distro:,base,dev,monolith,ci,user:,docker-gid:,branch:,epic-user:,epic-token:,force-rebuild -n 'parse-options' -- "$@"`
+OPTS=`getopt -o h --long help,ubuntu-distro:,base,dev,monolith,ci,user:,docker-gid:,branch:,repo:,epic-user:,epic-token:,force-rebuild -n 'parse-options' -- "$@"`
 
 eval set -- "$OPTS"
 
@@ -87,6 +89,9 @@ while [[ $# -gt 0 ]]; do
       shift 2 ;;
     --branch)
       BRANCH="$2"
+      shift 2 ;;
+    --repo)
+      REPO="$2"
       shift 2 ;;
     --epic-user)
       EPIC_USER="$2"
@@ -160,6 +165,7 @@ if ${BUILD_MONOLITH}; then
   docker build ${FORCE_REBUILD:+--no-cache} \
     --build-arg UBUNTU_DISTRO=${UBUNTU_DISTRO} \
     --build-arg BRANCH=${BRANCH} \
+    --build-arg REPO=${REPO} \
     --build-arg UID=${HOST_UID} \
     --build-arg GID=${HOST_GID} \
     --build-arg DOCKER_GID=${DOCKER_GID} \
