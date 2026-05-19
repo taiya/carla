@@ -402,6 +402,12 @@ void UActorBlueprintFunctionLibrary::MakeCameraDefinition(
     PostProccess.RecommendedValues = { TEXT("true") };
     PostProccess.bRestrictToRecommended = false;
 
+    FActorVariation Vignette;
+    Vignette.Id = TEXT("enable_vignette");
+    Vignette.Type = EActorAttributeType::Bool;
+    Vignette.RecommendedValues = { TEXT("true") };
+    Vignette.bRestrictToRecommended = false;
+
     // Gamma
     FActorVariation Gamma;
     Gamma.Id = TEXT("gamma");
@@ -663,7 +669,8 @@ void UActorBlueprintFunctionLibrary::MakeCameraDefinition(
       Temperature,
       Tint,
       ChromaticIntensity,
-      ChromaticOffset});
+      ChromaticOffset,
+      Vignette});
   }
 
   Success = CheckActorDefinition(Definition);
@@ -2002,6 +2009,13 @@ void UActorBlueprintFunctionLibrary::SetCamera(
         RetrieveActorAttributeToFloat("chromatic_aberration_intensity", Description.Variations, 0.0f));
     Camera->SetChromAberrOffset(
         RetrieveActorAttributeToFloat("chromatic_aberration_offset", Description.Variations, 0.0f));
+  }
+  if (Description.Variations.Contains("enable_vignette"))
+  {
+    Camera->EnableVignette(
+        ActorAttributeToBool(
+        Description.Variations["enable_vignette"],
+        true));
   }
 }
 

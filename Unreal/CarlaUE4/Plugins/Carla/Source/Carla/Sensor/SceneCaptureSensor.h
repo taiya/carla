@@ -162,6 +162,18 @@ public:
   }
 
   UFUNCTION(BlueprintCallable)
+  void EnableVignette(bool Enable = true)
+  {
+    bEnableVignette = Enable;
+  }
+
+  UFUNCTION(BlueprintCallable)
+  bool IsVignetteEnabled() const
+  {
+    return bEnableVignette;
+  }
+
+  UFUNCTION(BlueprintCallable)
   void Enable16BitFormat(bool Enable = false)
   {
     bEnable16BitFormat = Enable;
@@ -465,6 +477,10 @@ protected:
   /// Whether to render the post-processing effects present in the scene.
   UPROPERTY(EditAnywhere)
   bool bEnablePostProcessingEffects = true;
+
+  /// Whether to render the vignette post-processing effect.
+  UPROPERTY(EditAnywhere)
+  bool bEnableVignette = true;
 
   /// Whether to change render target format to PF_A16B16G16R16, offering 16bit / channel
   UPROPERTY(EditAnywhere)

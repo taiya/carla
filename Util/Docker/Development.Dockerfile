@@ -102,4 +102,4 @@ WORKDIR ${CARLA_UE4_ROOT}
 RUN ./Update.sh
 RUN make PythonAPI
 RUN make CarlaUE4Editor
-RUN make package && rm -rf ${CARLA_UE4_ROOT}/Dist
+RUN make package

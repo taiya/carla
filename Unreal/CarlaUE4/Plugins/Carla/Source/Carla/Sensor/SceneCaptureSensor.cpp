@@ -588,6 +588,13 @@ void ASceneCaptureSensor::BeginPlay()
   SceneCaptureSensor_local_ns::ConfigureShowFlags(CaptureComponent2D->ShowFlags,
       bEnablePostProcessingEffects);
 
+  if (!bEnableVignette)
+  {
+    CaptureComponent2D->PostProcessSettings.bOverride_VignetteIntensity = true;
+    CaptureComponent2D->PostProcessSettings.VignetteIntensity = 0.0f;
+    CaptureComponent2D->ShowFlags.SetVignette(false);
+  }
+
   // This ensures the camera is always spawning the raindrops in case the
   // weather was previously set to have rain.
   GetEpisode().GetWeather()->NotifyWeather(this);
