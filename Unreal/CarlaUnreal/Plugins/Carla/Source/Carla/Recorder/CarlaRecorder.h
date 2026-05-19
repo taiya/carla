@@ -69,9 +69,9 @@ enum class CarlaRecorderPacketId : uint8_t
   FrameCounter,
   WalkerBones,
   VisualTime,
-  VehicleDoor,
   AnimVehicleWheels,
   AnimBiker,
+  VehicleDoor,
   Weather
 };
 
