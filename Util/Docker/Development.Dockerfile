@@ -98,6 +98,11 @@ RUN git clone --depth 1 --branch ${BRANCH} ${REPO} ${CARLA_UE4_ROOT}
 
 WORKDIR ${CARLA_UE4_ROOT}
 
+# Fix libpng download URL: SourceForge moved 1.6.37 to older-releases/.
+# This patch is idempotent and safe on newer clones where Setup.sh is already fixed.
+RUN sed -i 's|sourceforge.net/projects/libpng/files/libpng16/|downloads.sourceforge.net/project/libpng/libpng16/older-releases/|g' \
+    Util/BuildTools/Setup.sh
+
 # NOTE: Don't run these commands together as Update.sh truncates the output
 RUN ./Update.sh
 RUN make PythonAPI
