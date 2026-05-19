@@ -57,6 +57,15 @@ FBoundingBox UBoundingBoxCalculator::GetActorBoundingBox(const AActor *Actor, ui
       {
         FBoundingBox Box = GetSkeletalMeshBoundingBoxFromComponent(ParentComp);
 
+        // Lift the mesh-component-space bounds into actor-local space. The
+        // skeletal mesh component on ACharacter is offset from the actor root
+        // (typically -Z by the capsule half-height so the feet line up with
+        // the capsule bottom) and rotated relative to the actor frame, so a
+        // full transform on origin + rotation + scale is required for the box
+        // to remain consistent with GetCharacterBoundingBox.
+        const FTransform &MeshRelative = ParentComp->GetRelativeTransform();
+        Box = ApplyTransformToBB(Box, MeshRelative);
+
         if (Character->GetName().Contains("_AB001_G3")
           || Character->GetName().Contains("_AG001_G3"))
         {
@@ -279,22 +288,23 @@ FBoundingBox UBoundingBoxCalculator::GetSkeletalMeshBoundingBoxFromComponent(
   const USkeletalMeshComponent* SkeletalMeshComp
 )
 {
-  if(!SkeletalMeshComp || !SkeletalMeshComp->GetSkeletalMeshAsset())
+  if (!SkeletalMeshComp || !SkeletalMeshComp->GetSkeletalMeshAsset())
   {
-    UE_LOG(LogCarla, Error, TEXT("GetSkeletalMeshBoundingBoxFromComponent no SkeletalMeshComponent or SkeletalMesh"));
+    UE_LOG(
+        LogCarla,
+        Error,
+        TEXT("GetSkeletalMeshBoundingBoxFromComponent: missing SkeletalMeshComponent or SkeletalMesh"));
     return {};
   }
 
-  // Force update bounds to current pose
-  const_cast<USkeletalMeshComponent*>(SkeletalMeshComp)->UpdateBounds();
+  // Bounds in mesh-component space: passing an identity transform yields a
+  // local AABB that already reflects the current animation pose, so the
+  // returned Origin is the actual mesh centre relative to its component (not
+  // the component's world position).
+  const FBoxSphereBounds LocalBounds =
+      SkeletalMeshComp->CalcBounds(FTransform::Identity);
 
-  // Get bounds in component space (already includes current animation pose)
-  FBoxSphereBounds Bounds = SkeletalMeshComp->Bounds;
-
-  FVector Origin = FVector::ZeroVector;
-  FVector Extent = Bounds.BoxExtent;
-
-  return {Origin, Extent};
+  return {LocalBounds.Origin, LocalBounds.BoxExtent};
 }
 
 // TODO: update to calculate current animation pose
