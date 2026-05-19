@@ -5,6 +5,11 @@ else
 include Util/BuildTools/Linux.mk
 endif
 
+# --- token should have read access over private repositories (sigh...)
+check-auth:
+	git ls-remote https://$(EPIC_USER):$(EPIC_TOKEN)@github.com/CarlaUnreal/UnrealEngine.git HEAD
+
+# --- build the docker image
 docker:
 	Util/Docker/build.sh --monolith \
 		--branch main \

@@ -82,7 +82,7 @@ FROM development AS monolith
 USER ${USERNAME}
 
 # Built engine
-ENV UE4_ROOT="/workspaces/unreal-egine"
+ENV UE4_ROOT="/workspaces/unreal-engine"
 RUN --mount=type=secret,id=epic_user,uid=${UID} \
     --mount=type=secret,id=epic_token,uid=${UID} \
     bash /build_scripts/build_ue4.sh \
