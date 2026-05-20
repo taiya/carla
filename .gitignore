@@ -59,3 +59,6 @@ devcontainer.json
 # Site-local files (never commit)
 common.mk
 AGENTS.md
+
+# Generated output
+output/
