@@ -19,15 +19,13 @@ docker.monolith:
 		--epic-user=$(EPIC_USER) \
 		--epic-token=$(EPIC_TOKEN)
 
-# Image name for the lightweight runtime image.
-# If AZURE_CONTAINER_REGISTRY is set (see ~/.bashrc), the image is tagged directly with
-# the full registry path so `make docker` + `make docker.push` need no retag step.
-# Falls back to a plain local name when AZURE_CONTAINER_REGISTRY is unset.
-CARLA_RUNTIME_IMAGE := $(if $(AZURE_CONTAINER_REGISTRY),$(AZURE_CONTAINER_REGISTRY)/library/carlasim/carla:0.9.16novignette,carla-runtime:main)
+CARLA_RUNTIME_IMAGE := $(AZURE_CONTAINER_REGISTRY)/library/carlasim/carla:0.9.16novignette
 
 # --- build the lightweight runtime image (~20 GB) from the pre-built monolith.
 # Requires: make docker.monolith  (must run first; ~233 GB image, ~2+ hours to build)
+# Requires: AZURE_CONTAINER_REGISTRY env var (set in ~/.bashrc)
 docker:
+	@test -n "$(AZURE_CONTAINER_REGISTRY)" || (echo "ERROR: AZURE_CONTAINER_REGISTRY is not set"; exit 1)
 	docker build \
 		--build-arg DIST_DIR=$$(docker run --rm carla-monolith:main bash -c \
 			"ls /workspaces/carla/Dist/ | grep -v .tar.gz | head -1") \
