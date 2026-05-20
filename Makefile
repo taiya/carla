@@ -19,7 +19,7 @@ docker.monolith:
 		--epic-user=$(EPIC_USER) \
 		--epic-token=$(EPIC_TOKEN)
 
-CARLA_RUNTIME_IMAGE := $(AZURE_CONTAINER_REGISTRY)/library/carlasim/carla:0.9.16novignette
+CARLA_RUNTIME_IMAGE := $(AZURE_CONTAINER_REGISTRY)/library/carlasim/carla:0.9.16-novignette
 
 # --- build the lightweight runtime image (~20 GB) from the pre-built monolith.
 # Requires: make docker.monolith  (must run first; ~233 GB image, ~2+ hours to build)
