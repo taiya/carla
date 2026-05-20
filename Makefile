@@ -112,3 +112,8 @@ video.no-vignette:
 	$(call ENCODE,no_vignette)
 
 videos: video.default video.no-postprocess video.no-vignette
+
+# 2×2 comparison video (runs after all three captures are done)
+video.comparison:
+	OUTPUT_DIR=$(OUTPUT_DIR) VIDEO_FPS=$(VIDEO_FPS) \
+		PythonAPI/examples/comparison_video.sh
