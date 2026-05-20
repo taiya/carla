@@ -56,5 +56,6 @@ profiler.csv
 .venv
 devcontainer.json
 
-# Site-local make targets (never commit)
+# Site-local files (never commit)
 common.mk
+AGENTS.md
