@@ -162,7 +162,7 @@ if ${BUILD_MONOLITH}; then
   fi
 
   echo "Building development image carla-monolith:${BRANCH} with user ${HOST_UID}:${HOST_GID}"
-  docker build --progress=plain ${FORCE_REBUILD:+--no-cache} \
+  BUILDKIT_STEP_LOG_MAX_SIZE=104857600 docker build --progress=plain ${FORCE_REBUILD:+--no-cache} \
     --build-arg UBUNTU_DISTRO=${UBUNTU_DISTRO} \
     --build-arg BRANCH=${BRANCH} \
     --build-arg REPO=${REPO} \
