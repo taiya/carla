@@ -9,8 +9,20 @@ endif
 check-auth:
 	git ls-remote https://$(EPIC_USER):$(EPIC_TOKEN)@github.com/CarlaUnreal/UnrealEngine.git HEAD
 
-# --- build the docker image
+# --- build the lightweight runtime image (~20 GB) from the pre-built monolith.
+# Requires: make docker.monolith  (must run first; ~233 GB image, ~2+ hours to build)
 docker:
+	docker build \
+		--build-arg DIST_DIR=$$(docker run --rm carla-monolith:main bash -c \
+			"ls /workspaces/carla/Dist/ | grep -v .tar.gz | head -1") \
+		-f Util/Docker/Runtime.Dockerfile \
+		-t carla-runtime:main \
+		Util/Docker
+
+# --- build the full monolith image (~233 GB, ~2+ hours).
+# Compiles Unreal Engine 4 + CARLA from source inside Docker.
+# Requires EPIC_USER and EPIC_TOKEN env vars (GitHub credentials for CarlaUnreal/UnrealEngine).
+docker.monolith:
 	Util/Docker/build.sh --monolith \
 		--branch main \
 		--repo https://github.com/taiya/carla.git \
@@ -20,32 +32,29 @@ docker:
 # ---------------------------------------------------------------------------
 # Video capture targets
 #
-# Each target runs a self-contained Docker container (carla-monolith:main) that:
-#   1. Starts CarlaUE4 in headless/offscreen mode from the packaged Dist/
+# Each target runs a self-contained Docker container (carla-runtime:main) that:
+#   1. Starts CarlaUE4 in headless/offscreen mode
 #   2. Runs hello_video.py (mounted from the host) to save PNG frames
 #   3. Exits; ffmpeg then encodes the frames on the host
 #
 # Requirements on the host:
 #   - NVIDIA Container Toolkit  (for --gpus all)
 #   - ffmpeg                    (apt install ffmpeg)
-#   - carla-monolith:main image built via: make docker EPIC_USER=... EPIC_TOKEN=...
+#   - carla-runtime:main image built via: make docker  (needs docker.monolith first)
 #
 # Output layout:
 #   $(OUTPUT_DIR)/<run>/frames/*.png  -- captured frames
 #   $(OUTPUT_DIR)/<run>.mp4           -- encoded video
 # ---------------------------------------------------------------------------
 
-DOCKER_IMAGE ?= carla-monolith:main
+DOCKER_IMAGE ?= carla-runtime:main
 VIDEO_FRAMES ?= 200
 VIDEO_FPS    ?= 20
 OUTPUT_DIR   ?= /workspace/output/carla
 
-# Inside the monolith image:
-#   CarlaUE4.sh is at /workspaces/carla/Dist/CARLA_0.9.16/LinuxNoEditor/CarlaUE4.sh
-#   Python 3.10 is at /usr/local/bin/python3.10
-#   carla wheel is at /workspaces/carla/PythonAPI/carla/dist/carla-*-cp310-*.whl
-CARLA_LAUNCHER = /workspaces/carla/Dist/CARLA_0.9.16/LinuxNoEditor/CarlaUE4.sh
-CARLA_WHEEL    = /workspaces/carla/PythonAPI/carla/dist/carla-0.9.16-cp310-cp310-manylinux_2_31_x86_64.whl
+# Inside the runtime image the packaged CARLA lives directly under /workspace/.
+# The carla Python wheel is pre-installed at image build time (no pip needed at run time).
+CARLA_LAUNCHER = /workspace/CarlaUE4.sh
 
 # $(1) = run name   $(2) = --postprocess arg   $(3) = --vignette arg
 define CAPTURE
@@ -54,11 +63,10 @@ define CAPTURE
 		-v $(OUTPUT_DIR):/output \
 		-v $(CURDIR)/PythonAPI/examples/hello_video.py:/hello_video.py:ro \
 		$(DOCKER_IMAGE) bash -lc '\
-			python3.10 -m pip install --quiet $(CARLA_WHEEL) && \
 			$(CARLA_LAUNCHER) -RenderOffScreen -nosound -quality-level=Epic & \
 			SERVER_PID=$$!; \
 			sleep 15; \
-			python3.10 /hello_video.py \
+			python3.8 /hello_video.py \
 				--postprocess $(2) --vignette $(3) \
 				--frames $(VIDEO_FRAMES) --outdir /output/$(1)/frames; \
 			EXIT_CODE=$$?; \
