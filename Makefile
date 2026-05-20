@@ -19,6 +19,12 @@ docker.monolith:
 		--epic-user=$(EPIC_USER) \
 		--epic-token=$(EPIC_TOKEN)
 
+# Image name for the lightweight runtime image.
+# If WAYVE_REGISTRY is set (see ~/.bashrc), the image is tagged directly with
+# the full registry path so `make docker` + `make docker.push` need no retag step.
+# Falls back to a plain local name when WAYVE_REGISTRY is unset.
+CARLA_RUNTIME_IMAGE := $(if $(WAYVE_REGISTRY),$(WAYVE_REGISTRY)/library/carlasim/carla:0.9.16novignette,carla-runtime:main)
+
 # --- build the lightweight runtime image (~20 GB) from the pre-built monolith.
 # Requires: make docker.monolith  (must run first; ~233 GB image, ~2+ hours to build)
 docker:
@@ -26,23 +32,21 @@ docker:
 		--build-arg DIST_DIR=$$(docker run --rm carla-monolith:main bash -c \
 			"ls /workspaces/carla/Dist/ | grep -v .tar.gz | head -1") \
 		-f Util/Docker/Runtime.Dockerfile \
-		-t carla-runtime:main \
+		-t $(CARLA_RUNTIME_IMAGE) \
 		Util/Docker
 
-# Push the local runtime image to the registry specified by WAYVE_REGISTRY env var.
+# Push the runtime image to the registry specified by WAYVE_REGISTRY env var.
 # Requires: export WAYVE_REGISTRY=<registry-host>  (set in ~/.bashrc)
-# Requires: az acr login --name $$WAYVE_REGISTRY
 docker.push:
 	@test -n "$(WAYVE_REGISTRY)" || (echo "ERROR: WAYVE_REGISTRY is not set"; exit 1)
 	az acr login --name $(WAYVE_REGISTRY)
-	docker tag carla-runtime:main $(WAYVE_REGISTRY)/library/carlasim/carla:0.9.16novignette
-	docker push $(WAYVE_REGISTRY)/library/carlasim/carla:0.9.16novignette
-	@echo "Pushed: $(WAYVE_REGISTRY)/library/carlasim/carla:0.9.16novignette"
+	docker push $(CARLA_RUNTIME_IMAGE)
+	@echo "Pushed: $(CARLA_RUNTIME_IMAGE)"
 
 # ---------------------------------------------------------------------------
 # Video capture targets
 #
-# Each target runs a self-contained Docker container (carla-runtime:main) that:
+# Each target runs a self-contained Docker container that:
 #   1. Starts CarlaUE4 in headless/offscreen mode
 #   2. Runs hello_video.py (mounted from the host) to save PNG frames
 #   3. Exits; ffmpeg then encodes the frames on the host
@@ -50,14 +54,14 @@ docker.push:
 # Requirements on the host:
 #   - NVIDIA Container Toolkit  (for --gpus all)
 #   - ffmpeg                    (apt install ffmpeg)
-#   - carla-runtime:main image built via: make docker  (needs docker.monolith first)
+#   - runtime image built via: make docker  (needs docker.monolith first)
 #
 # Output layout:
 #   $(OUTPUT_DIR)/<run>/frames/*.png  -- captured frames
 #   $(OUTPUT_DIR)/<run>.mp4           -- encoded video
 # ---------------------------------------------------------------------------
 
-DOCKER_IMAGE ?= carla-runtime:main
+DOCKER_IMAGE ?= $(CARLA_RUNTIME_IMAGE)
 VIDEO_FRAMES ?= 200
 VIDEO_FPS    ?= 20
 OUTPUT_DIR   ?= /workspace/output/carla
