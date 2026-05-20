@@ -20,10 +20,10 @@ docker.monolith:
 		--epic-token=$(EPIC_TOKEN)
 
 # Image name for the lightweight runtime image.
-# If WAYVE_REGISTRY is set (see ~/.bashrc), the image is tagged directly with
+# If AZURE_CONTAINER_REGISTRY is set (see ~/.bashrc), the image is tagged directly with
 # the full registry path so `make docker` + `make docker.push` need no retag step.
-# Falls back to a plain local name when WAYVE_REGISTRY is unset.
-CARLA_RUNTIME_IMAGE := $(if $(WAYVE_REGISTRY),$(WAYVE_REGISTRY)/library/carlasim/carla:0.9.16novignette,carla-runtime:main)
+# Falls back to a plain local name when AZURE_CONTAINER_REGISTRY is unset.
+CARLA_RUNTIME_IMAGE := $(if $(AZURE_CONTAINER_REGISTRY),$(AZURE_CONTAINER_REGISTRY)/library/carlasim/carla:0.9.16novignette,carla-runtime:main)
 
 # --- build the lightweight runtime image (~20 GB) from the pre-built monolith.
 # Requires: make docker.monolith  (must run first; ~233 GB image, ~2+ hours to build)
@@ -35,11 +35,11 @@ docker:
 		-t $(CARLA_RUNTIME_IMAGE) \
 		Util/Docker
 
-# Push the runtime image to the registry specified by WAYVE_REGISTRY env var.
-# Requires: export WAYVE_REGISTRY=<registry-host>  (set in ~/.bashrc)
+# Push the runtime image to the registry specified by AZURE_CONTAINER_REGISTRY env var.
+# Requires: export AZURE_CONTAINER_REGISTRY=<registry-host>  (set in ~/.bashrc)
 docker.push:
-	@test -n "$(WAYVE_REGISTRY)" || (echo "ERROR: WAYVE_REGISTRY is not set"; exit 1)
-	az acr login --name $(WAYVE_REGISTRY)
+	@test -n "$(AZURE_CONTAINER_REGISTRY)" || (echo "ERROR: AZURE_CONTAINER_REGISTRY is not set"; exit 1)
+	az acr login --name $(AZURE_CONTAINER_REGISTRY)
 	docker push $(CARLA_RUNTIME_IMAGE)
 	@echo "Pushed: $(CARLA_RUNTIME_IMAGE)"
 
