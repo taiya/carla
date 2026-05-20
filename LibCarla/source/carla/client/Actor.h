@@ -127,6 +127,10 @@ namespace client {
     /// Enable or disable gravity on this actor.
     void SetEnableGravity(bool enabled = true);
 
+    /// Hide or show this actor in the renderer without destroying it.
+    /// Physics, collisions, and replay identity are preserved.
+    void SetRenderHidden(bool hidden);
+
     rpc::ActorState GetActorState() const;
 
     bool IsAlive() const {

@@ -557,6 +557,23 @@ ECarlaServerResponse FCarlaActor::AddActorTorque(const FVector& Torque)
   return ECarlaServerResponse::Success;
 }
 
+ECarlaServerResponse FCarlaActor::SetActorRenderHidden(bool bHidden)
+{
+  if (IsDormant())
+  {
+    return ECarlaServerResponse::FunctionNotSupported;
+  }
+  AActor* Actor = GetActor();
+  if (!Actor)
+  {
+    return ECarlaServerResponse::ActorNotFound;
+  }
+  // SetActorHiddenInGame toggles render visibility for the root and all
+  // attached components without touching collision or physics.
+  Actor->SetActorHiddenInGame(bHidden);
+  return ECarlaServerResponse::Success;
+}
+
 ECarlaServerResponse FCarlaActor::SetActorSimulatePhysics(bool bEnabled)
 {
   if (IsDormant())

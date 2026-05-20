@@ -350,6 +350,17 @@ class Actor:
             `enabled (bool, optional)`: Defaults to True.
         """
 
+    def set_render_hidden(self, hidden: bool):
+        """Hides or shows the actor in the renderer without destroying it.
+
+        The actor remains alive: its transform, physics, collisions, and replay
+        identity are fully preserved. Only render visibility changes.
+
+        Args:
+            `hidden (bool)`: If True the actor becomes invisible to all cameras.
+                             If False it is restored to visible.
+        """
+
     def set_target_angular_velocity(self, angular_velocity: Vector3D):
         """_summary_Sets the actor's angular velocity vector.
 

@@ -499,6 +499,10 @@ namespace detail {
     _pimpl->AsyncCall("set_actor_enable_gravity", actor, enabled);
   }
 
+  void Client::SetActorRenderHidden(rpc::ActorId actor, const bool hidden) {
+    _pimpl->CallAndWait<void>("set_actor_render_hidden", actor, hidden);
+  }
+
   void Client::SetActorAutopilot(rpc::ActorId vehicle, const bool enabled) {
     _pimpl->AsyncCall("set_actor_autopilot", vehicle, enabled);
   }

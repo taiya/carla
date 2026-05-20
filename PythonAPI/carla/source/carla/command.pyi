@@ -46,6 +46,7 @@ __all__ = [
     "Response",
     "SetAutopilot",
     "SetEnableGravity",
+    "SetRenderHidden",
     "SetSimulatePhysics",
     "SetVehicleLightState",
     "ShowDebugTelemetry",
@@ -430,6 +431,32 @@ class SetEnableGravity(_IsCommand):
         Args:
             `actor (Actor | int)`: Actor or Actor ID to which the command will be applied to.\n
             `enabled (bool)`: If gravity should be activated or not.
+        """
+    # endregion
+
+class SetRenderHidden(_IsCommand):
+    """Command adaptation of `set_render_hidden()` in `carla.Actor`. Hides or shows an actor in the renderer without affecting physics or collisions."""
+
+    # region Instance Variables
+    @property
+    def actor_id(self) -> int:
+        """Actor that is affected by the command."""
+
+    @property
+    def hidden(self) -> bool:
+        """If the actor should be hidden (True) or visible (False)."""
+    # endregion
+
+    # region Methods
+    def __init__(self, actor: Actor | int, hidden: bool) -> None:
+        """Hides or shows an actor in the renderer.
+
+        The actor remains alive: transform, physics, collisions, and replay
+        identity are preserved. Only render visibility changes.
+
+        Args:
+            `actor (Actor | int)`: Actor or Actor ID to which the command will be applied to.\n
+            `hidden (bool)`: If True the actor is hidden from all cameras; if False it is restored.
         """
     # endregion
 

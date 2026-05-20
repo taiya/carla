@@ -292,6 +292,16 @@ namespace rpc {
       MSGPACK_DEFINE_ARRAY(actor, traffic_light_state);
     };
 
+    struct SetRenderHidden : CommandBase<SetRenderHidden> {
+      SetRenderHidden() = default;
+      SetRenderHidden(ActorId id, bool value)
+        : actor(id),
+          hidden(value) {}
+      ActorId actor;
+      bool hidden;
+      MSGPACK_DEFINE_ARRAY(actor, hidden);
+    };
+
     using CommandType = boost::variant2::variant<
         SpawnActor,
         DestroyActor,
@@ -314,7 +324,8 @@ namespace rpc {
         SetVehicleLightState,
         ApplyLocation,
         ConsoleCommand,
-        SetTrafficLightState>;
+        SetTrafficLightState,
+        SetRenderHidden>;
 
     CommandType command;
 
