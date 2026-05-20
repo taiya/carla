@@ -15,12 +15,13 @@ saves N frames to disk. Designed to be encoded into an MP4 with ffmpeg afterward
 Usage:
     python3 hello_video.py [--host H] [--port P] [--postprocess {on,off}]
                            [--vignette {on,off}] [--frames N] [--outdir PATH]
+                           [--camera {front,follow}] [--hide-vehicles {on,off}]
 
 Portability:
-    --postprocess on/off   Works on stock CARLA 0.9.16 and the patched fork.
-    --vignette on/off      Requires the patched taiya/carla build. If run against
-                           a stock image with --vignette off the script will exit
-                           with a descriptive error.
+    --postprocess on/off     Works on stock CARLA 0.9.16 and the patched fork.
+    --vignette on/off        Requires the patched taiya/carla build.
+    --hide-vehicles on/off   Requires the patched taiya/carla build (set_render_hidden).
+    --camera front|follow    front = hood-level (default); follow = 8 m behind, 3 m above.
 """
 
 import argparse
@@ -39,6 +40,11 @@ def parse_args():
                         help='Enable/disable all post-processing effects (default: on)')
     parser.add_argument('--vignette', choices=['on', 'off'], default='on',
                         help='Enable/disable vignette effect (default: on, requires patched build)')
+    parser.add_argument('--camera', choices=['front', 'follow'], default='front',
+                        help='Camera mount: front = hood-level (default); '
+                             'follow = 8 m behind, 3 m above (follow-cam)')
+    parser.add_argument('--hide-vehicles', choices=['on', 'off'], default='off',
+                        help='Hide the ego vehicle via set_render_hidden (default: off, requires patched build)')
     parser.add_argument('--frames', type=int, default=200,
                         help='Number of frames to capture (default: 200)')
     parser.add_argument('--outdir', default='_out',
@@ -95,11 +101,30 @@ def main():
                     file=sys.stderr)
                 return 1
 
-        camera_transform = carla.Transform(carla.Location(x=1.5, z=2.4))
+        if args.camera == 'follow':
+            # Follow cam: 8 m behind, 3 m above, pitched 10° down
+            camera_transform = carla.Transform(
+                carla.Location(x=-8.0, z=3.0),
+                carla.Rotation(pitch=-10.0))
+        else:
+            # Front camera: hood-level, default for all existing targets
+            camera_transform = carla.Transform(carla.Location(x=1.5, z=2.4))
+
         camera = world.spawn_actor(camera_bp, camera_transform, attach_to=vehicle)
         actor_list.append(camera)
-        print('Spawned camera: %s (postprocess=%s, vignette=%s)' % (
-            camera.type_id, args.postprocess, args.vignette))
+        print('Spawned camera: %s (postprocess=%s, vignette=%s, camera=%s, hide-vehicles=%s)' % (
+            camera.type_id, args.postprocess, args.vignette, args.camera, args.hide_vehicles))
+
+        # hide_vehicles requires the patched build
+        if args.hide_vehicles == 'on':
+            if not hasattr(vehicle, 'set_render_hidden'):
+                print(
+                    'ERROR: actor.set_render_hidden not found.\n'
+                    'This requires the patched CARLA build (taiya/carla novehicle branch).\n'
+                    'Run with --hide-vehicles off, or rebuild the Docker image with patched sources.',
+                    file=sys.stderr)
+                return 1
+            vehicle.set_render_hidden(True)
 
         # Use synchronous mode for deterministic frame capture
         settings = world.get_settings()

@@ -68,7 +68,7 @@ OUTPUT_DIR   ?= /workspace/output/carla
 # The carla Python wheel is pre-installed at image build time (no pip needed at run time).
 CARLA_LAUNCHER = /workspace/CarlaUE4.sh
 
-# $(1) = run name   $(2) = --postprocess arg   $(3) = --vignette arg
+# $(1) = run name   $(2) = --postprocess arg   $(3) = --vignette arg   $(4) = --camera arg   $(5) = --hide-vehicles arg
 define CAPTURE
 	mkdir -p $(OUTPUT_DIR)/$(1)/frames
 	docker run --rm --gpus all --net=host \
@@ -82,6 +82,7 @@ define CAPTURE
 			sleep 15; \
 			python3.8 /hello_video.py \
 				--postprocess $(2) --vignette $(3) \
+				--camera $(4) --hide-vehicles $(5) \
 				--frames $(VIDEO_FRAMES) --outdir /output/$(1)/frames; \
 			EXIT_CODE=$$?; \
 			kill $$SERVER_PID; wait $$SERVER_PID 2>/dev/null || true; \
@@ -98,20 +99,30 @@ endef
 
 # (1) Default: all post-processing on
 video.default:
-	$(call CAPTURE,default,on,on)
+	$(call CAPTURE,default,on,on,front,off)
 	$(call ENCODE,default)
 
 # (2) Post-processing disabled
 video.no-postprocess:
-	$(call CAPTURE,no_postprocess,off,on)
+	$(call CAPTURE,no_postprocess,off,on,front,off)
 	$(call ENCODE,no_postprocess)
 
 # (4) Vignette disabled — requires the patched taiya/carla build
 video.no-vignette:
-	$(call CAPTURE,no_vignette,on,off)
+	$(call CAPTURE,no_vignette,on,off,front,off)
 	$(call ENCODE,no_vignette)
 
-videos: video.default video.no-postprocess video.no-vignette
+# (5) Follow-cam, vehicle visible — requires the patched taiya/carla build (novehicle branch)
+video.with_vehicles:
+	$(call CAPTURE,with_vehicles,on,on,follow,off)
+	$(call ENCODE,with_vehicles)
+
+# (6) Follow-cam, vehicle hidden — requires the patched taiya/carla build (novehicle branch)
+video.without_vehicles:
+	$(call CAPTURE,without_vehicles,on,on,follow,on)
+	$(call ENCODE,without_vehicles)
+
+videos: video.default video.no-postprocess video.no-vignette video.with_vehicles video.without_vehicles
 
 # 2×2 comparison video (runs after all three captures are done)
 video.comparison:
