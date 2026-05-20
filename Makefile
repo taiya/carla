@@ -29,6 +29,16 @@ docker:
 		-t carla-runtime:main \
 		Util/Docker
 
+# Push the local runtime image to the registry specified by WAYVE_REGISTRY env var.
+# Requires: export WAYVE_REGISTRY=<registry-host>  (set in ~/.bashrc)
+# Requires: az acr login --name $$WAYVE_REGISTRY
+docker.push:
+	@test -n "$(WAYVE_REGISTRY)" || (echo "ERROR: WAYVE_REGISTRY is not set"; exit 1)
+	az acr login --name $(WAYVE_REGISTRY)
+	docker tag carla-runtime:main $(WAYVE_REGISTRY)/library/carlasim/carla:0.9.16novignette
+	docker push $(WAYVE_REGISTRY)/library/carlasim/carla:0.9.16novignette
+	@echo "Pushed: $(WAYVE_REGISTRY)/library/carlasim/carla:0.9.16novignette"
+
 # ---------------------------------------------------------------------------
 # Video capture targets
 #
