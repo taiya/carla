@@ -14,12 +14,12 @@ check-auth:
 # Requires EPIC_USER and EPIC_TOKEN env vars (GitHub credentials for CarlaUnreal/UnrealEngine).
 docker.monolith:
 	Util/Docker/build.sh --monolith \
-		--branch main \
+		--branch novehicle \
 		--repo https://github.com/taiya/carla.git \
 		--epic-user=$(EPIC_USER) \
 		--epic-token=$(EPIC_TOKEN)
 
-CARLA_RUNTIME_IMAGE := $(AZURE_CONTAINER_REGISTRY)/library/carlasim/carla:0.9.16-novignette
+CARLA_RUNTIME_IMAGE := $(AZURE_CONTAINER_REGISTRY)/library/carlasim/carla:0.9.16-novehicle
 
 # --- build the lightweight runtime image (~20 GB) from the pre-built monolith.
 # Requires: make docker.monolith  (must run first; ~233 GB image, ~2+ hours to build)
@@ -27,7 +27,8 @@ CARLA_RUNTIME_IMAGE := $(AZURE_CONTAINER_REGISTRY)/library/carlasim/carla:0.9.16
 docker:
 	@test -n "$(AZURE_CONTAINER_REGISTRY)" || (echo "ERROR: AZURE_CONTAINER_REGISTRY is not set"; exit 1)
 	docker build \
-		--build-arg DIST_DIR=$$(docker run --rm carla-monolith:main bash -c \
+		--build-arg MONOLITH_TAG=novehicle \
+		--build-arg DIST_DIR=$$(docker run --rm carla-monolith:novehicle bash -c \
 			"ls /workspaces/carla/Dist/ | grep -v .tar.gz | head -1") \
 		-f Util/Docker/Runtime.Dockerfile \
 		-t $(CARLA_RUNTIME_IMAGE) \
