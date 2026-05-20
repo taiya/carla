@@ -31,6 +31,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         xdg-user-dirs \
         python3.8 \
         python3-pip \
+        libjpeg8 \
+        libtiff5 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace

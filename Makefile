@@ -9,16 +9,6 @@ endif
 check-auth:
 	git ls-remote https://$(EPIC_USER):$(EPIC_TOKEN)@github.com/CarlaUnreal/UnrealEngine.git HEAD
 
-# --- build the lightweight runtime image (~20 GB) from the pre-built monolith.
-# Requires: make docker.monolith  (must run first; ~233 GB image, ~2+ hours to build)
-docker:
-	docker build \
-		--build-arg DIST_DIR=$$(docker run --rm carla-monolith:main bash -c \
-			"ls /workspaces/carla/Dist/ | grep -v .tar.gz | head -1") \
-		-f Util/Docker/Runtime.Dockerfile \
-		-t carla-runtime:main \
-		Util/Docker
-
 # --- build the full monolith image (~233 GB, ~2+ hours).
 # Compiles Unreal Engine 4 + CARLA from source inside Docker.
 # Requires EPIC_USER and EPIC_TOKEN env vars (GitHub credentials for CarlaUnreal/UnrealEngine).
@@ -28,6 +18,16 @@ docker.monolith:
 		--repo https://github.com/taiya/carla.git \
 		--epic-user=$(EPIC_USER) \
 		--epic-token=$(EPIC_TOKEN)
+
+# --- build the lightweight runtime image (~20 GB) from the pre-built monolith.
+# Requires: make docker.monolith  (must run first; ~233 GB image, ~2+ hours to build)
+docker:
+	docker build \
+		--build-arg DIST_DIR=$$(docker run --rm carla-monolith:main bash -c \
+			"ls /workspaces/carla/Dist/ | grep -v .tar.gz | head -1") \
+		-f Util/Docker/Runtime.Dockerfile \
+		-t carla-runtime:main \
+		Util/Docker
 
 # ---------------------------------------------------------------------------
 # Video capture targets
@@ -60,6 +60,8 @@ CARLA_LAUNCHER = /workspace/CarlaUE4.sh
 define CAPTURE
 	mkdir -p $(OUTPUT_DIR)/$(1)/frames
 	docker run --rm --gpus all --net=host \
+		--user $$(id -u):$$(id -g) \
+		-e HOME=/tmp \
 		-v $(OUTPUT_DIR):/output \
 		-v $(CURDIR)/PythonAPI/examples/hello_video.py:/hello_video.py:ro \
 		$(DOCKER_IMAGE) bash -lc '\
