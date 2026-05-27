@@ -63,3 +63,7 @@ AGENTS.md
 # Generated output
 output/
 output
+
+# Site-local azure sync scripts (contain a hardcoded storage URL)
+azure_upload.sh
+azure_download.sh

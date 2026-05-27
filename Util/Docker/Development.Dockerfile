@@ -77,11 +77,13 @@ USER ${USERNAME}
 ENV HOME="/home/${USERNAME}"
 WORKDIR /workspaces
 
-FROM development AS monolith
+# --- ue4 stage ---------------------------------------------------------------
+# Builds Unreal Engine 4 from CarlaUnreal/UnrealEngine. Requires EPIC credentials
+# (passed via build secrets). Output tag: carla-ue4:<branch>.
+FROM development AS ue4
 
 USER ${USERNAME}
 
-# Built engine
 ENV UE4_ROOT="/workspaces/unreal-engine"
 RUN --mount=type=secret,id=epic_user,uid=${UID} \
     --mount=type=secret,id=epic_token,uid=${UID} \
@@ -89,22 +91,3 @@ RUN --mount=type=secret,id=epic_user,uid=${UID} \
       --ue4-root ${UE4_ROOT} \
       --epic-user $(cat /run/secrets/epic_user) \
       --epic-token $(cat /run/secrets/epic_token)
-
-# Built carla
-ENV CARLA_UE4_ROOT="/workspaces/carla"
-ARG BRANCH=main
-ARG REPO=https://github.com/taiya/carla.git
-RUN git clone --depth 1 --branch ${BRANCH} ${REPO} ${CARLA_UE4_ROOT}
-
-WORKDIR ${CARLA_UE4_ROOT}
-
-# Fix libpng download URL: SourceForge moved 1.6.37 to older-releases/.
-# This patch is idempotent and safe on newer clones where Setup.sh is already fixed.
-RUN sed -i 's|sourceforge.net/projects/libpng/files/libpng16/|downloads.sourceforge.net/project/libpng/libpng16/older-releases/|g' \
-    Util/BuildTools/Setup.sh
-
-# NOTE: Don't run these commands together as Update.sh truncates the output
-RUN ./Update.sh
-RUN make PythonAPI
-RUN make CarlaUE4Editor
-RUN make package

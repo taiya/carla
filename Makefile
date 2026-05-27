@@ -9,15 +9,22 @@ endif
 check-auth:
 	git ls-remote https://$(EPIC_USER):$(EPIC_TOKEN)@github.com/CarlaUnreal/UnrealEngine.git HEAD
 
-# --- build the full monolith image (~233 GB, ~2+ hours).
-# Compiles Unreal Engine 4 + CARLA from source inside Docker.
+# --- build the UE4 image carla-ue4:novehicle (~150 GB, ~1+ hour).
+# Compiles Unreal Engine 4 from source inside Docker.
 # Requires EPIC_USER and EPIC_TOKEN env vars (GitHub credentials for CarlaUnreal/UnrealEngine).
+docker.ue4:
+	Util/Docker/build.sh --ue4 \
+		--branch novehicle \
+		--epic-user=$(EPIC_USER) \
+		--epic-token=$(EPIC_TOKEN)
+
+# --- build the monolith image carla-monolith:novehicle (~233 GB, ~1+ hour).
+# Compiles CARLA on top of the carla-ue4:novehicle image (which must already
+# be loaded locally; see `make docker.ue4`). Does not need EPIC credentials.
 docker.monolith:
 	Util/Docker/build.sh --monolith \
 		--branch novehicle \
-		--repo https://github.com/taiya/carla.git \
-		--epic-user=$(EPIC_USER) \
-		--epic-token=$(EPIC_TOKEN)
+		--repo https://github.com/taiya/carla.git
 
 CARLA_RUNTIME_IMAGE := $(AZURE_CONTAINER_REGISTRY)/library/carlasim/carla:0.9.16-novehicle
 
