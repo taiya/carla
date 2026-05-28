@@ -18,9 +18,31 @@ docker.ue4:
 		--epic-user=$(EPIC_USER) \
 		--epic-token=$(EPIC_TOKEN)
 
+CARLA_UE4_IMAGE := $(AZURE_CONTAINER_REGISTRY)/library/carlasim/carla-ue4:novehicle
+
+# Push the local carla-ue4:novehicle image to AZURE_CONTAINER_REGISTRY.
+# Requires: export AZURE_CONTAINER_REGISTRY=<registry-host>  (set in ~/.bashrc)
+docker.ue4.push:
+	@test -n "$(AZURE_CONTAINER_REGISTRY)" || (echo "ERROR: AZURE_CONTAINER_REGISTRY is not set"; exit 1)
+	az acr login --name $(AZURE_CONTAINER_REGISTRY)
+	docker tag carla-ue4:novehicle $(CARLA_UE4_IMAGE)
+	docker push $(CARLA_UE4_IMAGE)
+	@echo "Pushed: $(CARLA_UE4_IMAGE)"
+
+# Pull the carla-ue4 image from AZURE_CONTAINER_REGISTRY and tag it locally
+# as carla-ue4:novehicle so `make docker.monolith` picks it up.
+# Requires: export AZURE_CONTAINER_REGISTRY=<registry-host>  (set in ~/.bashrc)
+docker.ue4.pull:
+	@test -n "$(AZURE_CONTAINER_REGISTRY)" || (echo "ERROR: AZURE_CONTAINER_REGISTRY is not set"; exit 1)
+	az acr login --name $(AZURE_CONTAINER_REGISTRY)
+	docker pull $(CARLA_UE4_IMAGE)
+	docker tag $(CARLA_UE4_IMAGE) carla-ue4:novehicle
+	@echo "Pulled: $(CARLA_UE4_IMAGE)  (also tagged as carla-ue4:novehicle)"
+
 # --- build the monolith image carla-monolith:novehicle (~233 GB, ~1+ hour).
 # Compiles CARLA on top of the carla-ue4:novehicle image (which must already
-# be loaded locally; see `make docker.ue4`). Does not need EPIC credentials.
+# be loaded locally; see `make docker.ue4` or `make docker.ue4.pull`).
+# Does not need EPIC credentials.
 docker.monolith:
 	Util/Docker/build.sh --monolith \
 		--branch novehicle \
