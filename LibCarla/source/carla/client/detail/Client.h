@@ -288,6 +288,10 @@ namespace detail {
         rpc::ActorId actor,
         bool enabled);
 
+    void SetActorRenderHidden(
+        rpc::ActorId actor,
+        bool hidden);
+
     void SetActorAutopilot(
         rpc::ActorId vehicle,
         bool enabled);

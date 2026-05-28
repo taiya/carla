@@ -528,6 +528,10 @@ namespace detail {
       _client.SetActorEnableGravity(actor.GetId(), enabled);
     }
 
+    void SetActorRenderHidden(Actor &actor, bool hidden) {
+      _client.SetActorRenderHidden(actor.GetId(), hidden);
+    }
+
     /// @}
     // =========================================================================
     /// @name Operations with vehicles

@@ -9,17 +9,46 @@ endif
 check-auth:
 	git ls-remote https://$(EPIC_USER):$(EPIC_TOKEN)@github.com/CarlaUnreal/UnrealEngine.git HEAD
 
-# --- build the full monolith image (~233 GB, ~2+ hours).
-# Compiles Unreal Engine 4 + CARLA from source inside Docker.
+# --- build the UE4 image carla-ue4:novehicle (~150 GB, ~1+ hour).
+# Compiles Unreal Engine 4 from source inside Docker.
 # Requires EPIC_USER and EPIC_TOKEN env vars (GitHub credentials for CarlaUnreal/UnrealEngine).
-docker.monolith:
-	Util/Docker/build.sh --monolith \
-		--branch main \
-		--repo https://github.com/taiya/carla.git \
+docker.ue4:
+	Util/Docker/build.sh --ue4 \
+		--branch novehicle \
 		--epic-user=$(EPIC_USER) \
 		--epic-token=$(EPIC_TOKEN)
 
-CARLA_RUNTIME_IMAGE := $(AZURE_CONTAINER_REGISTRY)/library/carlasim/carla:0.9.16-novignette
+CARLA_UE4_IMAGE := $(AZURE_CONTAINER_REGISTRY)/library/carlasim/carla-ue4:novehicle
+
+# Push the local carla-ue4:novehicle image to AZURE_CONTAINER_REGISTRY.
+# Requires: export AZURE_CONTAINER_REGISTRY=<registry-host>  (set in ~/.bashrc)
+docker.ue4.push:
+	@test -n "$(AZURE_CONTAINER_REGISTRY)" || (echo "ERROR: AZURE_CONTAINER_REGISTRY is not set"; exit 1)
+	az acr login --name $(AZURE_CONTAINER_REGISTRY)
+	docker tag carla-ue4:novehicle $(CARLA_UE4_IMAGE)
+	docker push $(CARLA_UE4_IMAGE)
+	@echo "Pushed: $(CARLA_UE4_IMAGE)"
+
+# Pull the carla-ue4 image from AZURE_CONTAINER_REGISTRY and tag it locally
+# as carla-ue4:novehicle so `make docker.monolith` picks it up.
+# Requires: export AZURE_CONTAINER_REGISTRY=<registry-host>  (set in ~/.bashrc)
+docker.ue4.pull:
+	@test -n "$(AZURE_CONTAINER_REGISTRY)" || (echo "ERROR: AZURE_CONTAINER_REGISTRY is not set"; exit 1)
+	az acr login --name $(AZURE_CONTAINER_REGISTRY)
+	docker pull $(CARLA_UE4_IMAGE)
+	docker tag $(CARLA_UE4_IMAGE) carla-ue4:novehicle
+	@echo "Pulled: $(CARLA_UE4_IMAGE)  (also tagged as carla-ue4:novehicle)"
+
+# --- build the monolith image carla-monolith:novehicle (~233 GB, ~1+ hour).
+# Compiles CARLA on top of the carla-ue4:novehicle image (which must already
+# be loaded locally; see `make docker.ue4` or `make docker.ue4.pull`).
+# Does not need EPIC credentials.
+docker.monolith:
+	Util/Docker/build.sh --monolith \
+		--branch novehicle \
+		--repo https://github.com/taiya/carla.git
+
+CARLA_RUNTIME_IMAGE := $(AZURE_CONTAINER_REGISTRY)/library/carlasim/carla:0.9.16-novehicle
 
 # --- build the lightweight runtime image (~20 GB) from the pre-built monolith.
 # Requires: make docker.monolith  (must run first; ~233 GB image, ~2+ hours to build)
@@ -27,7 +56,8 @@ CARLA_RUNTIME_IMAGE := $(AZURE_CONTAINER_REGISTRY)/library/carlasim/carla:0.9.16
 docker:
 	@test -n "$(AZURE_CONTAINER_REGISTRY)" || (echo "ERROR: AZURE_CONTAINER_REGISTRY is not set"; exit 1)
 	docker build \
-		--build-arg DIST_DIR=$$(docker run --rm carla-monolith:main bash -c \
+		--build-arg MONOLITH_TAG=novehicle \
+		--build-arg DIST_DIR=$$(docker run --rm carla-monolith:novehicle bash -c \
 			"ls /workspaces/carla/Dist/ | grep -v .tar.gz | head -1") \
 		-f Util/Docker/Runtime.Dockerfile \
 		-t $(CARLA_RUNTIME_IMAGE) \
@@ -68,7 +98,7 @@ OUTPUT_DIR   ?= /workspace/output/carla
 # The carla Python wheel is pre-installed at image build time (no pip needed at run time).
 CARLA_LAUNCHER = /workspace/CarlaUE4.sh
 
-# $(1) = run name   $(2) = --postprocess arg   $(3) = --vignette arg
+# $(1) = run name   $(2) = --postprocess arg   $(3) = --vignette arg   $(4) = --camera arg   $(5) = --hide-vehicles arg
 define CAPTURE
 	mkdir -p $(OUTPUT_DIR)/$(1)/frames
 	docker run --rm --gpus all --net=host \
@@ -82,6 +112,7 @@ define CAPTURE
 			sleep 15; \
 			python3.8 /hello_video.py \
 				--postprocess $(2) --vignette $(3) \
+				--camera $(4) --hide-vehicles $(5) \
 				--frames $(VIDEO_FRAMES) --outdir /output/$(1)/frames; \
 			EXIT_CODE=$$?; \
 			kill $$SERVER_PID; wait $$SERVER_PID 2>/dev/null || true; \
@@ -98,20 +129,30 @@ endef
 
 # (1) Default: all post-processing on
 video.default:
-	$(call CAPTURE,default,on,on)
+	$(call CAPTURE,default,on,on,front,off)
 	$(call ENCODE,default)
 
 # (2) Post-processing disabled
 video.no-postprocess:
-	$(call CAPTURE,no_postprocess,off,on)
+	$(call CAPTURE,no_postprocess,off,on,front,off)
 	$(call ENCODE,no_postprocess)
 
 # (4) Vignette disabled — requires the patched taiya/carla build
 video.no-vignette:
-	$(call CAPTURE,no_vignette,on,off)
+	$(call CAPTURE,no_vignette,on,off,front,off)
 	$(call ENCODE,no_vignette)
 
-videos: video.default video.no-postprocess video.no-vignette
+# (5) Follow-cam, vehicle visible — requires the patched taiya/carla build (novehicle branch)
+video.with_vehicles:
+	$(call CAPTURE,with_vehicles,on,on,follow,off)
+	$(call ENCODE,with_vehicles)
+
+# (6) Follow-cam, vehicle hidden — requires the patched taiya/carla build (novehicle branch)
+video.without_vehicles:
+	$(call CAPTURE,without_vehicles,on,on,follow,on)
+	$(call ENCODE,without_vehicles)
+
+videos: video.default video.no-postprocess video.no-vignette video.with_vehicles video.without_vehicles
 
 # 2×2 comparison video (runs after all three captures are done)
 video.comparison:

@@ -135,6 +135,7 @@ void export_actor() {
       .def("set_simulate_physics", &cc::Actor::SetSimulatePhysics, (arg("enabled") = true))
       .def("set_collisions", &cc::Actor::SetCollisions, (arg("enabled") = true))
       .def("set_enable_gravity", &cc::Actor::SetEnableGravity, (arg("enabled") = true))
+      .def("set_render_hidden", &cc::Actor::SetRenderHidden, (arg("hidden")))
       .def("destroy", CALL_WITHOUT_GIL(cc::Actor, Destroy))
       .def(self_ns::str(self_ns::self))
   ;

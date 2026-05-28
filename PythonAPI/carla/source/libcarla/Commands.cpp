@@ -199,6 +199,13 @@ void export_commands() {
     .def_readwrite("enabled", &cr::Command::SetEnableGravity::enabled)
   ;
 
+  class_<cr::Command::SetRenderHidden>("SetRenderHidden")
+    .def("__init__", &command_impl::CustomInit<ActorPtr, bool>, (arg("actor"), arg("hidden")))
+    .def(init<cr::ActorId, bool>((arg("actor_id"), arg("hidden"))))
+    .def_readwrite("actor_id", &cr::Command::SetRenderHidden::actor)
+    .def_readwrite("hidden", &cr::Command::SetRenderHidden::hidden)
+  ;
+
   class_<cr::Command::SetAutopilot>("SetAutopilot")
     .def("__init__", &command_impl::CustomInit<ActorPtr, bool, uint16_t>, (arg("actor"), arg("enabled"), arg("tm_port") = TM_DEFAULT_PORT ))
     .def(init<cr::ActorId, bool, uint16_t>((arg("actor_id"), arg("enabled"), arg("tm_port") = TM_DEFAULT_PORT )))
